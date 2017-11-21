@@ -60,7 +60,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         
         super.init(size: size)
     }
-    
+
     required init?(coder aDecoder: NSCoder) {
         fatalError("init(coder:) has not been implemented")
     }
@@ -70,12 +70,17 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         
         self.physicsWorld.contactDelegate = self
         
-        let background = SKSpriteNode(imageNamed: "background")
-        background.size = self.size
-        background.position = CGPoint(x: self.size.width/2, y: self.size.height/2)
-        background.zPosition = 0
-        self.addChild(background)
-        
+        for i in 0...1 {
+            let background = SKSpriteNode(imageNamed: "background")
+            background.size = self.size
+            background.anchorPoint = CGPoint(x: 0.5, y: 0)
+            background.position = CGPoint(x: self.size.width/2,
+                                          y: self.size.height * CGFloat(i))
+            background.zPosition = 0
+            background.name = "Background"
+            self.addChild(background)
+        }
+            
         player.setScale(0.3)
         player.position = CGPoint(x: self.size.width/2, y: 0 - player.size.height)
         player.zPosition = 2 // bullet underneath
@@ -116,6 +121,34 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         
         let fadeInAction = SKAction.fadeIn(withDuration: 0.3)
         tapToStartLabel.run(fadeInAction)
+    }
+    
+    var lastUpdateTime: TimeInterval = 0
+    var deltaFrameTime: TimeInterval = 0
+    var amountToMovePerSecond: CGFloat = 600.0
+    
+    override func update(_ currentTime: TimeInterval) {
+        if lastUpdateTime == 0 {
+            lastUpdateTime = currentTime
+        }
+        else {
+            deltaFrameTime = currentTime - lastUpdateTime
+            lastUpdateTime = currentTime
+        }
+        
+        let amountToMoveBackground = amountToMovePerSecond * CGFloat(deltaFrameTime)
+        
+        self.enumerateChildNodes(withName: "Background") {
+            background, stop in
+            if self.currentGameState == gameState.inGame {
+                background.position.y -= amountToMoveBackground
+            }
+            
+            // если бэкграунд уйдет за нижнюю границу, возвращаем его обратно
+            if background.position.y < -self.size.height {
+                background.position.y += self.size.height * 2
+            }
+        }
     }
     
     func startGame() {
